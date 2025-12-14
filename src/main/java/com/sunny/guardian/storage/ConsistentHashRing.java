@@ -46,9 +46,7 @@ public class ConsistentHashRing {
         try {
             for (int i = 0; i < this.virtualNodes; i++) {
                 String key = nodeId + DELIMITER + i;
-                try (JedisPool remove = this.ring.remove(this.getHash(key))) {
-                    // Closing jedis connection with try-with-resources block
-                }
+                this.ring.remove(this.getHash(key));
             }
         } finally {
             writeLock.unlock();
@@ -58,6 +56,9 @@ public class ConsistentHashRing {
     public JedisPool getPool(String key) {
         readLock.lock();
         try {
+            if (this.ring.isEmpty()) {
+                return null;
+            }
             Long hashedKey = this.getHash(key);
             if (this.ring.containsKey(hashedKey)) {
                 return this.ring.get(hashedKey);
