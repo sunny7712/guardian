@@ -15,13 +15,15 @@ dependencies {
     implementation("io.grpc:grpc-stub:1.77.0")
     implementation("io.grpc:grpc-protobuf:1.77.0")
     implementation("io.grpc:grpc-netty-shaded:1.77.0")
+    implementation("redis.clients:jedis:7.1.0")
+    implementation("com.google.guava:guava:33.5.0-jre")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 protobuf {
-    protoc {artifact = "com.google.protobuf:protoc:3.24.0"}
+    protoc { artifact = "com.google.protobuf:protoc:3.24.0" }
     plugins {
 
         // Registers a protoc plugin named grpc and points it at the artifact
