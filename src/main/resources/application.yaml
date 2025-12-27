@@ -1,0 +1,32 @@
+guardian:
+  token-bucket:
+    plans:
+      free:
+        default:
+          bucket-capacity: 30
+          refill-rate: 20
+        heavy-write:
+          bucket-capacity: 20
+          refill-rate: 15
+
+      pro:
+        default:
+          bucket-capacity: 50
+          refill-rate: 10
+        heavy-write:
+          bucket-capacity: 40
+          refill-rate: 5
+
+  sliding-window-counter:
+    plans:
+      free:
+        default:
+          capacity: 30
+        heavy-write:
+          capacity: 20
+
+      pro:
+        default:
+          capacity: 50
+        heavy-write:
+          bucket-capacity: 40
