@@ -1,11 +1,13 @@
 package com.sunny.guardian.storage.impl;
 
 import com.sunny.guardian.storage.Storage;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 
+@Component
 public class InMemoryStorage<T> implements Storage<T> {
 
     private final Map<String, T> store;
