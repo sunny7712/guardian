@@ -1,6 +1,8 @@
 package com.sunny.guardian.storage;
 
+import java.util.function.BiFunction;
+
 public interface Storage<T> {
-    void set(String key, T value);
+    T compute(String key, BiFunction<String, T, T> remappingFunction);
     T get(String key);
 }

@@ -1,4 +1,4 @@
-package com.sunny.guardian.dto;
+package com.sunny.guardian.config;
 
 import lombok.Data;
 
