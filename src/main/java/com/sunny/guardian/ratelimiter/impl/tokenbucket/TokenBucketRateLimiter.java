@@ -30,12 +30,17 @@ public class TokenBucketRateLimiter implements RateLimiter {
 
         boolean[] isAllowed = {false};
         storage.compute(key, (k , state) -> {
+            if (state == null) {
+                state = new TokenBucketState();
+                state.setLastRefillTimeInEpochMillis(System.currentTimeMillis());
+                state.setAvailableMillisTokens(bucketCapacityMillis);
+            }
             long timeElapsedInMillis = Math.max(0L, System.currentTimeMillis() - state.getLastRefillTimeInEpochMillis());
             long tokenMillisToAdd;
             try {
                 tokenMillisToAdd = Math.multiplyExact(timeElapsedInMillis, refillRate);
             } catch (ArithmeticException e) {
-                tokenMillisToAdd = Long.MAX_VALUE; // Cap at max if it overflows
+                tokenMillisToAdd = bucketCapacityMillis;
             }
             long currentTokensMillis = Math.min(bucketCapacityMillis, state.getAvailableMillisTokens() + tokenMillisToAdd);
             if(currentTokensMillis >= 1000) {
