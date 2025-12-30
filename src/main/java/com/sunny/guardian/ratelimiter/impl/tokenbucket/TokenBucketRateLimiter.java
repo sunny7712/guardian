@@ -6,6 +6,7 @@ import com.sunny.guardian.ratelimiter.impl.tokenbucket.config.TokenBucketRateLim
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketState;
 import com.sunny.guardian.storage.Storage;
+import com.sunny.guardian.utils.GuardianClock;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,15 +14,18 @@ public class TokenBucketRateLimiter implements RateLimiter {
 
     private final Storage<TokenBucketState> storage;
     private final TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig;
+    private final GuardianClock guardianClock;
 
     private static final String KEY_DELIMITER = ":";
     private static final long TOKEN_RESOLUTION_MULTIPLIER = 1000;
     private static final long COST_PER_REQUEST = 1 * TOKEN_RESOLUTION_MULTIPLIER;
 
-    public TokenBucketRateLimiter(Storage<TokenBucketState> storage, TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig) {
+    public TokenBucketRateLimiter(Storage<TokenBucketState> storage,
+                                  TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig,
+                                  GuardianClock guardianClock) {
         this.storage = storage;
         this.tokenBucketRateLimiterConfig = tokenBucketRateLimiterConfig;
-
+        this.guardianClock = guardianClock;
     }
 
     @Override
@@ -41,7 +45,7 @@ public class TokenBucketRateLimiter implements RateLimiter {
 
         boolean[] isAllowed = {false};
         storage.compute(key, (k , existingState) -> {
-            long now = System.currentTimeMillis();
+            long now = guardianClock.currentTimeMillis();
             if (existingState == null) {
                 isAllowed[0] = true;
                 return new TokenBucketState(now, bucketCapacityUnits - COST_PER_REQUEST);
