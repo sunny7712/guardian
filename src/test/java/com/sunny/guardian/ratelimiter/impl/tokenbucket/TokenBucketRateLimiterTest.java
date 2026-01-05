@@ -14,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 class TokenBucketRateLimiterTest {
 
@@ -70,5 +71,46 @@ class TokenBucketRateLimiterTest {
 
         // 3. Assertion
         Assertions.assertEquals(10, allowedCount.get(), "Race condition detected! More requests allowed than capacity.");
+    }
+
+    @Test
+    void testRefill_TimeTravel() {
+        // 1. Setup
+        TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig = new TokenBucketRateLimiterConfig();
+        Map<String, Map<String, TokenBucketQuota>> plans = new HashMap<>();
+        Map<String, TokenBucketQuota> quotaMap = new HashMap<>();
+
+        // Capacity: 10, Refill: 1 token/sec
+        quotaMap.put("default", new TokenBucketQuota(10, 1));
+        plans.put("test_plan", quotaMap);
+        tokenBucketRateLimiterConfig.setPlans(plans);
+
+        // Mutable clock
+        AtomicLong time = new AtomicLong(100000L);
+        GuardianClock mockClock = time::get;
+
+        TokenBucketRateLimiter tokenBucket = new TokenBucketRateLimiter(
+                new InMemoryStorage<>(),
+                tokenBucketRateLimiterConfig,
+                mockClock
+        );
+
+        RateLimitRequest rateLimitRequest = new RateLimitRequest("user_1", "test_plan", "default");
+
+        // 2. Execute
+        // We expect 10 successes, then failures
+        for(int i = 0; i < 10; i++) {
+            Assertions.assertTrue(tokenBucket.allow(rateLimitRequest), "Request " + i + " should be allowed");
+        }
+        Assertions.assertFalse(tokenBucket.allow(rateLimitRequest), "Bucket should be empty now");
+
+        // Time travel. Advance clock by 5000ms (5 seconds)
+        // At 1 token/sec, we should get exactly 5 tokens back.
+        time.addAndGet(5000L);
+
+        for(int i = 0; i < 5; i++) {
+            Assertions.assertTrue(tokenBucket.allow(rateLimitRequest), "Refilled Request " + i + " should be allowed");
+        }
+        Assertions.assertFalse(tokenBucket.allow(rateLimitRequest), "Bucket should be empty again");
     }
 }
