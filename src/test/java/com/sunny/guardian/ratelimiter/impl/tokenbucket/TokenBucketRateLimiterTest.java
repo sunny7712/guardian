@@ -44,30 +44,31 @@ class TokenBucketRateLimiterTest {
 
         // 2. Execute
         int threadCount = 300;
-        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
-        CountDownLatch startSignal = new CountDownLatch(1);
-        CountDownLatch endSignal = new CountDownLatch(threadCount);
-        AtomicInteger allowedCount = new AtomicInteger(0);
+        AtomicInteger allowedCount;
+        try (ExecutorService executorService = Executors.newFixedThreadPool(threadCount)) {
+            CountDownLatch startSignal = new CountDownLatch(1);
+            CountDownLatch endSignal = new CountDownLatch(threadCount);
+            allowedCount = new AtomicInteger(0);
 
-        for (int i = 0; i < threadCount; i++) {
-            executorService.submit(() -> {
-                try {
-                    startSignal.await();
-                    if(tokenBucketRateLimiter.allow(rateLimitRequest)) {
-                        allowedCount.incrementAndGet();
+            for (int i = 0; i < threadCount; i++) {
+                executorService.submit(() -> {
+                    try {
+                        startSignal.await();
+                        if (tokenBucketRateLimiter.allow(rateLimitRequest)) {
+                            allowedCount.incrementAndGet();
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        endSignal.countDown();
                     }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                finally {
-                    endSignal.countDown();
-                }
-            });
-        }
+                });
+            }
 
-        startSignal.countDown();
-        endSignal.await();
-        executorService.shutdown();
+            startSignal.countDown();
+            endSignal.await();
+            executorService.shutdown();
+        }
 
         // 3. Assertion
         Assertions.assertEquals(10, allowedCount.get(), "Race condition detected! More requests allowed than capacity.");
