@@ -15,7 +15,6 @@ dependencies {
     implementation("io.grpc:grpc-stub:1.77.0")
     implementation("io.grpc:grpc-protobuf:1.77.0")
     implementation("io.grpc:grpc-netty-shaded:1.77.0")
-    implementation("redis.clients:jedis:7.1.0")
     implementation("com.google.guava:guava:33.5.0-jre")
     implementation("org.springframework.boot:spring-boot-starter:4.0.1")
     implementation("org.springframework.boot:spring-boot-starter-web:4.0.1")
