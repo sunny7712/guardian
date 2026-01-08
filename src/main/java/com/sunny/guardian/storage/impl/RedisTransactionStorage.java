@@ -6,12 +6,14 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+@Component("redisTransactionStorage")
 public class RedisTransactionStorage<T> implements Storage<T> {
 
     private final RedisTemplate<String, String> redisTemplate;
@@ -30,10 +32,12 @@ public class RedisTransactionStorage<T> implements Storage<T> {
             try {
                 T result = redisTemplate.execute(new SessionCallback<T>() {
                     @Override
-                    public T execute(RedisOperations operations) throws DataAccessException {
-                        operations.watch(key);
+                    @SuppressWarnings("unchecked")
+                    public <K, V> T execute(@NonNull RedisOperations<K, V> operations) throws DataAccessException {
+                        RedisOperations<String, String> ops = (RedisOperations<String, String>) operations;
+                        ops.watch(key);
 
-                        String json = (String) operations.opsForValue().get(key);
+                        String json = ops.opsForValue().get(key);
 
                         T existingState = null;
                         if(Objects.nonNull(json)) {
@@ -44,10 +48,10 @@ public class RedisTransactionStorage<T> implements Storage<T> {
 
                         String newJson = objectMapper.writeValueAsString(newState);
 
-                        operations.multi();
-                        operations.opsForValue().set(key, newJson);
+                        ops.multi();
+                        ops.opsForValue().set(key, newJson);
 
-                        List<Object> execResults = operations.exec();
+                        List<Object> execResults = ops.exec();
 
                         if(execResults.isEmpty()) {
                             return null;

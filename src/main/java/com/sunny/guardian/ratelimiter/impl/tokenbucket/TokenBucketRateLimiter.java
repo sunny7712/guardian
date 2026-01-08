@@ -7,6 +7,7 @@ import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketState;
 import com.sunny.guardian.storage.Storage;
 import com.sunny.guardian.utils.GuardianClock;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,7 +21,7 @@ public class TokenBucketRateLimiter implements RateLimiter {
     private static final long TOKEN_RESOLUTION_MULTIPLIER = 1000;
     private static final long COST_PER_REQUEST = 1 * TOKEN_RESOLUTION_MULTIPLIER;
 
-    public TokenBucketRateLimiter(Storage<TokenBucketState> storage,
+    public TokenBucketRateLimiter(@Qualifier("redisTransactionStorage") Storage<TokenBucketState> storage,
                                   TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig,
                                   GuardianClock guardianClock) {
         this.storage = storage;

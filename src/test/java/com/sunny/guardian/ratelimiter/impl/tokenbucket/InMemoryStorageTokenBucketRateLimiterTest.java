@@ -16,7 +16,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-class TokenBucketRateLimiterTest {
+
+class InMemoryStorageTokenBucketRateLimiterTest {
 
     @Test
     void testConcurrency_ThunderingHerd() throws InterruptedException {
@@ -114,4 +115,6 @@ class TokenBucketRateLimiterTest {
         }
         Assertions.assertFalse(tokenBucket.allow(rateLimitRequest), "Bucket should be empty again");
     }
+
+
 }
