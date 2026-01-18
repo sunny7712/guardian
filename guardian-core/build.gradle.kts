@@ -15,11 +15,11 @@ dependencies {
     // Core Dependencies
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
-    implementation("tools.jackson.core:jackson-databind")
     implementation("org.jspecify:jspecify")
-
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
     // Test Dependencies (Unit Tests + Testcontainers)
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("com.redis.testcontainers:testcontainers-redis-junit:1.6.4")
 }

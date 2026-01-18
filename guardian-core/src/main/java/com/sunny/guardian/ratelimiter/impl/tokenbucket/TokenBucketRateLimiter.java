@@ -21,7 +21,7 @@ public class TokenBucketRateLimiter implements RateLimiter {
     private static final long TOKEN_RESOLUTION_MULTIPLIER = 1000;
     private static final long COST_PER_REQUEST = 1 * TOKEN_RESOLUTION_MULTIPLIER;
 
-    public TokenBucketRateLimiter(@Qualifier("redisTransactionStorage") Storage<TokenBucketState> storage,
+    public TokenBucketRateLimiter(@Qualifier("tokenBucketRedisStorage") Storage<TokenBucketState> storage,
                                   TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig,
                                   GuardianClock guardianClock) {
         this.storage = storage;

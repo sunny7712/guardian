@@ -1,12 +1,14 @@
 package com.sunny.guardian.storage.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sunny.guardian.storage.Storage;
 import org.jspecify.annotations.NonNull;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
-import tools.jackson.databind.ObjectMapper;
+
 
 import java.util.List;
 import java.util.Objects;
@@ -40,12 +42,21 @@ public class RedisTransactionStorage<T> implements Storage<T> {
 
                         T existingState = null;
                         if(Objects.nonNull(json)) {
-                            existingState = objectMapper.readValue(json, type);
+                            try {
+                                existingState = objectMapper.readValue(json, type);
+                            } catch (JsonProcessingException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
 
                         T newState = remappingFunction.apply(key, existingState);
 
-                        String newJson = objectMapper.writeValueAsString(newState);
+                        String newJson = null;
+                        try {
+                            newJson = objectMapper.writeValueAsString(newState);
+                        } catch (JsonProcessingException e) {
+                            throw new RuntimeException(e);
+                        }
 
                         ops.multi();
                         ops.opsForValue().set(key, newJson);
@@ -70,6 +81,10 @@ public class RedisTransactionStorage<T> implements Storage<T> {
     @Override
     public T get(String key) {
         String json = redisTemplate.opsForValue().get(key);
-        return objectMapper.readValue(json, type);
+        try {
+            return objectMapper.readValue(json, type);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
