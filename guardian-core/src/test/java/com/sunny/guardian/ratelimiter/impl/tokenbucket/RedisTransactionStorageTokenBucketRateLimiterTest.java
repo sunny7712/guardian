@@ -2,7 +2,6 @@ package com.sunny.guardian.ratelimiter.impl.tokenbucket;
 
 import com.redis.testcontainers.RedisContainer;
 import com.sunny.guardian.dto.RateLimitRequest;
-import com.sunny.guardian.ratelimiter.impl.tokenbucket.TokenBucketRateLimiter;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.config.TokenBucketRateLimiterConfig;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.utils.GuardianClock;
@@ -81,7 +80,8 @@ class RedisTransactionStorageTokenBucketRateLimiterTest {
         CountDownLatch startGun;
         CountDownLatch doneSignal;
         AtomicInteger allowedCount;
-        try (ExecutorService executor = Executors.newFixedThreadPool(threadCount)) {
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        try {
             startGun = new CountDownLatch(1);
             doneSignal = new CountDownLatch(threadCount);
             allowedCount = new AtomicInteger(0);
@@ -102,6 +102,8 @@ class RedisTransactionStorageTokenBucketRateLimiterTest {
                     }
                 });
             }
+        } finally {
+            executor.shutdown();
         }
 
         startGun.countDown();

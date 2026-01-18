@@ -1,7 +1,6 @@
 package com.sunny.guardian.ratelimiter.impl.tokenbucket;
 
 import com.sunny.guardian.dto.RateLimitRequest;
-import com.sunny.guardian.ratelimiter.impl.tokenbucket.TokenBucketRateLimiter;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.config.TokenBucketRateLimiterConfig;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.storage.impl.InMemoryStorage;
@@ -47,7 +46,8 @@ class InMemoryStorageTokenBucketRateLimiterTest {
         // 2. Execute
         int threadCount = 300;
         AtomicInteger allowedCount;
-        try (ExecutorService executorService = Executors.newFixedThreadPool(threadCount)) {
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        try {
             CountDownLatch startSignal = new CountDownLatch(1);
             CountDownLatch endSignal = new CountDownLatch(threadCount);
             allowedCount = new AtomicInteger(0);
@@ -69,6 +69,8 @@ class InMemoryStorageTokenBucketRateLimiterTest {
 
             startSignal.countDown();
             endSignal.await();
+            executorService.shutdown();
+        } finally {
             executorService.shutdown();
         }
 
