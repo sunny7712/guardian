@@ -1,9 +1,12 @@
 package com.sunny.guardian.ratelimiter.impl.tokenbucket;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redis.testcontainers.RedisContainer;
 import com.sunny.guardian.dto.RateLimitRequest;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.config.TokenBucketRateLimiterConfig;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
+import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
+import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.impl.RedisTransactionTokenBucketStore;
 import com.sunny.guardian.utils.GuardianClock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @SpringBootTest
 @Testcontainers
-class RedisTransactionStorageTokenBucketRateLimiterTest {
+class RedisTransactionTokenBucketRateLimiterTest {
 
     @Container
     @ServiceConnection
@@ -42,6 +45,15 @@ class RedisTransactionStorageTokenBucketRateLimiterTest {
         public GuardianClock fixedClock() {
             return () -> 100000L;
         }
+
+        @Bean
+        @Primary
+        public TokenBucketStore transactionTokenBucketStore(RedisTemplate<String, String> redisTemplate,
+                                                            ObjectMapper objectMapper,
+                                                            GuardianClock clock) {
+            return new RedisTransactionTokenBucketStore(redisTemplate, objectMapper, clock);
+        }
+
     }
 
     @Autowired

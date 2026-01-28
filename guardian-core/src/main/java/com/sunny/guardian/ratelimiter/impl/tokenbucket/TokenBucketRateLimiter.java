@@ -5,6 +5,7 @@ import com.sunny.guardian.ratelimiter.RateLimiter;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.config.TokenBucketRateLimiterConfig;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketState;
+import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
 import com.sunny.guardian.storage.Storage;
 import com.sunny.guardian.utils.GuardianClock;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,20 +14,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class TokenBucketRateLimiter implements RateLimiter {
 
-    private final Storage<TokenBucketState> storage;
+    private final TokenBucketStore store;
     private final TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig;
-    private final GuardianClock guardianClock;
 
     private static final String KEY_DELIMITER = ":";
-    private static final long TOKEN_RESOLUTION_MULTIPLIER = 1000;
-    private static final long COST_PER_REQUEST = 1 * TOKEN_RESOLUTION_MULTIPLIER;
+    private static final int DEFAULT_COST_OF_TOKENS = 1;
 
-    public TokenBucketRateLimiter(@Qualifier("tokenBucketRedisStorage") Storage<TokenBucketState> storage,
-                                  TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig,
-                                  GuardianClock guardianClock) {
-        this.storage = storage;
+    public TokenBucketRateLimiter(TokenBucketStore tokenBucketStore,
+                                  TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig) {
+        this.store = tokenBucketStore;
         this.tokenBucketRateLimiterConfig = tokenBucketRateLimiterConfig;
-        this.guardianClock = guardianClock;
     }
 
     @Override
@@ -40,35 +37,8 @@ public class TokenBucketRateLimiter implements RateLimiter {
         if (quota == null) {
             throw new IllegalArgumentException("Invalid quota: " + request.quota());
         }
-        long bucketCapacityUnits = quota.getBucketCapacity() * TOKEN_RESOLUTION_MULTIPLIER;
-        long refillRatePerSec = quota.getRefillRate();
         String key = constructKey(request);
-
-        boolean[] isAllowed = {false};
-        storage.compute(key, (k , existingState) -> {
-            long now = guardianClock.currentTimeMillis();
-            if (existingState == null) {
-                isAllowed[0] = true;
-                return new TokenBucketState(now, bucketCapacityUnits - COST_PER_REQUEST);
-            }
-            long timeElapsedInMillis = Math.max(0L, now - existingState.lastRefillTimeInEpochMillis());
-            long tokensToAddUnits;
-            try {
-                tokensToAddUnits = Math.multiplyExact(timeElapsedInMillis, refillRatePerSec);
-            } catch (ArithmeticException e) {
-                tokensToAddUnits = bucketCapacityUnits;
-            }
-            long newBalance = Math.min(bucketCapacityUnits, existingState.availableTokens() + tokensToAddUnits);
-            if(newBalance >= COST_PER_REQUEST) {
-                isAllowed[0] = true;
-                return new TokenBucketState(now, newBalance - COST_PER_REQUEST);
-            } else {
-                isAllowed[0] = false;
-                return new TokenBucketState(now, newBalance);
-            }
-        });
-
-        return isAllowed[0];
+        return store.allowRequest(key, quota, DEFAULT_COST_OF_TOKENS);
     }
 
     private String constructKey(RateLimitRequest request) {
