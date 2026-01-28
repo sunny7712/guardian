@@ -9,7 +9,6 @@ import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
 
-
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
