@@ -1,0 +1,16 @@
+server:
+  port: 8080
+
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+guardian:
+  token-bucket:
+    plans:
+      load_test_plan:
+        default:
+          bucketCapacity: 100
+          refillRate: 50

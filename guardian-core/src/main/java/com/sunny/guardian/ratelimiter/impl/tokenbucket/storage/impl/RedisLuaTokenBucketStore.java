@@ -3,14 +3,18 @@ package com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.impl;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
 import com.sunny.guardian.utils.GuardianClock;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.scripting.support.ResourceScriptSource;
+import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
 
+@Component
+@Primary
 public class RedisLuaTokenBucketStore implements TokenBucketStore {
 
     private final RedisTemplate<String, String> redisTemplate;
