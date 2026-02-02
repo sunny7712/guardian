@@ -2,7 +2,7 @@ local key = KEYS[1]
 local bucket_capacity = tonumber(ARGV[1])
 local refill_rate = tonumber(ARGV[2])
 local cost = tonumber(ARGV[3])
-local now = tonumber(ARGV[3])
+local now = tonumber(ARGV[4])
 
 local F_TOKENS = "t"
 local F_LAST_REFILL = "r"
