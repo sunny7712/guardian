@@ -7,12 +7,16 @@ import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketState;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
 import com.sunny.guardian.utils.GuardianClock;
 import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Component
+@Qualifier("redisTransactionTokenBucketStore")
 public class RedisTransactionTokenBucketStore implements TokenBucketStore {
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;

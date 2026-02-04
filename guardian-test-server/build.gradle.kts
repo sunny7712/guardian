@@ -14,8 +14,8 @@ repositories {
 dependencies {
     implementation(project(":guardian-core"))
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.springframework.boot:spring-boot-starter-actuator") // Metrics
-
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 

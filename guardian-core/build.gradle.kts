@@ -17,6 +17,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.jspecify:jspecify")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
+    implementation("io.micrometer:micrometer-core")
     // Test Dependencies (Unit Tests + Testcontainers)
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")

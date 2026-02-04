@@ -6,6 +6,7 @@ import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.impl.InMemoryTokenBucketStore;
 import com.sunny.guardian.utils.GuardianClock;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +35,7 @@ class InMemoryTokenBucketRateLimiterTest {
 
         // 2. Setup Dependencies
         GuardianClock fixedClock = () -> 100000L;
+        SimpleMeterRegistry simpleMeterRegistry = new SimpleMeterRegistry();
 
         // Inject Clock into the Store
         TokenBucketStore store = new InMemoryTokenBucketStore(fixedClock);
@@ -41,7 +43,8 @@ class InMemoryTokenBucketRateLimiterTest {
         // Inject Store into the Limiter
         TokenBucketRateLimiter tokenBucketRateLimiter = new TokenBucketRateLimiter(
                 store,
-                tokenBucketRateLimiterConfig
+                tokenBucketRateLimiterConfig,
+                simpleMeterRegistry
         );
 
         RateLimitRequest rateLimitRequest = new RateLimitRequest("user_1", "test_plan", "default");
@@ -100,9 +103,12 @@ class InMemoryTokenBucketRateLimiterTest {
         // Inject Clock into Store
         TokenBucketStore store = new InMemoryTokenBucketStore(mockClock);
 
+        SimpleMeterRegistry simpleMeterRegistry = new SimpleMeterRegistry();
+
         TokenBucketRateLimiter tokenBucket = new TokenBucketRateLimiter(
                 store,
-                tokenBucketRateLimiterConfig
+                tokenBucketRateLimiterConfig,
+                simpleMeterRegistry
         );
 
         RateLimitRequest rateLimitRequest = new RateLimitRequest("user_1", "test_plan", "default");

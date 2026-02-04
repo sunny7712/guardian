@@ -8,10 +8,13 @@ import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.impl.RedisTransactionTokenBucketStore;
 import com.sunny.guardian.utils.GuardianClock;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -29,8 +32,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@SpringBootTest
 @Testcontainers
+@SpringBootTest
 class RedisTransactionTokenBucketRateLimiterTest {
 
     @Container
@@ -47,11 +50,17 @@ class RedisTransactionTokenBucketRateLimiterTest {
         }
 
         @Bean
-        @Primary
+        @ConditionalOnMissingBean
         public TokenBucketStore transactionTokenBucketStore(RedisTemplate<String, String> redisTemplate,
                                                             ObjectMapper objectMapper,
                                                             GuardianClock clock) {
             return new RedisTransactionTokenBucketStore(redisTemplate, objectMapper, clock);
+        }
+
+        @Bean
+        @Primary
+        public MeterRegistry meterRegistry() {
+            return new SimpleMeterRegistry();
         }
 
     }

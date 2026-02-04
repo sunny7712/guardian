@@ -7,10 +7,13 @@ import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.impl.RedisLuaTokenBucketStore;
 import com.sunny.guardian.utils.GuardianClock;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -46,10 +49,15 @@ class RedisLuaTokenBucketStoreTest {
         }
 
         @Bean
-        @Primary
+        @ConditionalOnMissingBean
         public TokenBucketStore redisLuaTokenBucketStore(RedisTemplate<String, String> redisTemplate,
                                                             GuardianClock clock) {
             return new RedisLuaTokenBucketStore(redisTemplate, clock);
+        }
+
+        @Bean
+        public MeterRegistry meterRegistry() {
+            return new SimpleMeterRegistry();
         }
 
     }

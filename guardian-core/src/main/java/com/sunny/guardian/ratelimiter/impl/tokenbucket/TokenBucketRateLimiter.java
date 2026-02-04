@@ -5,36 +5,68 @@ import com.sunny.guardian.ratelimiter.RateLimiter;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.config.TokenBucketRateLimiterConfig;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TokenBucketRateLimiter implements RateLimiter {
 
-    private final TokenBucketStore store;
-    private final TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig;
+    public static final String ALLOWED = "allowed";
+    public static final String BLOCKED = "blocked";
+    public static final String ERROR = "error";
 
     private static final String KEY_DELIMITER = ":";
     private static final int DEFAULT_COST_OF_TOKENS = 1;
 
+
+    private final TokenBucketStore store;
+    private final TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig;
+    private final MeterRegistry meterRegistry;
+
+
+
     public TokenBucketRateLimiter(TokenBucketStore tokenBucketStore,
-                                  TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig) {
+                                  TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig,
+                                  MeterRegistry meterRegistry) {
         this.store = tokenBucketStore;
         this.tokenBucketRateLimiterConfig = tokenBucketRateLimiterConfig;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
     public boolean allow(RateLimitRequest request) {
-        var planMap = tokenBucketRateLimiterConfig.getPlans().get(request.plan());
-        if (planMap == null) {
-            throw new IllegalArgumentException("Invalid plan: " + request.plan());
+
+        Timer.Sample sample = Timer.start(meterRegistry);
+
+        String decision = ALLOWED;
+
+        try {
+            var planMap = tokenBucketRateLimiterConfig.getPlans().get(request.plan());
+            if (planMap == null) {
+                throw new IllegalArgumentException("Invalid plan: " + request.plan());
+            }
+
+            TokenBucketQuota quota = planMap.get(request.quota());
+            if (quota == null) {
+                throw new IllegalArgumentException("Invalid quota: " + request.quota());
+            }
+            String key = constructKey(request);
+            boolean allowed =  store.allowRequest(key, quota, DEFAULT_COST_OF_TOKENS);
+            decision = allowed ? ALLOWED : BLOCKED;
+            return allowed;
+        } catch (Exception e) {
+            decision = ERROR;
+            throw e;
+        } finally {
+            sample.stop(Timer.builder("guardian.ratelimit.logic")
+                    .description("Time taken to execute rate limit logic")
+                    .tag("plan", request.plan())
+                    .tag("quota", request.quota())
+                    .tag("result", decision)
+                    .register(meterRegistry));
         }
 
-        TokenBucketQuota quota = planMap.get(request.quota());
-        if (quota == null) {
-            throw new IllegalArgumentException("Invalid quota: " + request.quota());
-        }
-        String key = constructKey(request);
-        return store.allowRequest(key, quota, DEFAULT_COST_OF_TOKENS);
     }
 
     private String constructKey(RateLimitRequest request) {
