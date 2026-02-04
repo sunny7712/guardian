@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -49,10 +50,19 @@ class RedisLuaTokenBucketStoreTest {
         }
 
         @Bean
-        @ConditionalOnMissingBean
-        public TokenBucketStore redisLuaTokenBucketStore(RedisTemplate<String, String> redisTemplate,
+        public TokenBucketStore testRedisLuaTokenBucketStore(RedisTemplate<String, String> redisTemplate,
                                                             GuardianClock clock) {
             return new RedisLuaTokenBucketStore(redisTemplate, clock);
+        }
+
+        @Bean
+        @Primary
+        public TokenBucketRateLimiter testRateLimiter(
+                @Qualifier("testRedisLuaTokenBucketStore") TokenBucketStore store, // Inject test store bean
+                TokenBucketRateLimiterConfig config,
+                MeterRegistry registry) {
+
+            return new TokenBucketRateLimiter(store, config, registry);
         }
 
         @Bean
