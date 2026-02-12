@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  guardian-app:
+    build:
+      context: .
+      dockerfile: guardian-test-server/Dockerfile
+    image: guardian-test-server:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # Setting the host to redis instead of localhost is standard when your Spring application and Redis are running as separate services in a containerized network.
+      # Must match the name of the service below
+      - SPRING_DATA_REDIS_HOST=redis
+      - JAVA_TOOL_OPTIONS="-Xms256m -Xmx256m"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:8.6.0-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.56.2
+    container_name: cadvisor
+    privileged: true
+    ports:
+      - "8081:8080"
+    volumes:
+     # These are mounted as :ro (read-only) to ensure cAdvisor can gather data without the risk of accidentally modifying or deleting host system files.
+
+      # /:/rootfs:ro: Grants cAdvisor access to the host's entire root filesystem.
+      # This is primarily used to track overall disk usage and discover where other containers are stored on the host.
+      - /:/rootfs:ro
+
+      # /var/run:/var/run:ro: Allows cAdvisor to connect to the Docker socket (usually found at /var/run/docker.sock).
+      # This is how it identifies which containers are currently running, their names, and their metadata.
+      - /var/run:/var/run:ro
+
+      # /sys:/sys:ro: Accesses the host's cgroup (control group) data.
+      # Linux uses cgroups to limit and track resource usage (CPU, memory, I/O) for every process; cAdvisor reads these files to generate the actual performance numbers you see.
+      - /sys:/sys:ro
+
+      # /var/lib/docker/:/var/lib/docker:ro: Specifically used to monitor Docker-specific data, such as image sizes and container writable layers.
+      # It helps cAdvisor provide detailed filesystem metrics for each individual container.
+      - /var/lib/docker/:/var/lib/docker:ro
+
+      # /dev/disk/:/dev/disk:ro: Added for disk usage metrics
+      - /dev/disk/:/dev/disk:ro
+
+    # devices are used to map physical hardware or special system files from the host machine directly into a container.
+    # By Default, mapping a device gives the container read, write, and mknod (rwm) permissions for that hardware.
+    devices:
+      # /dev/kmsg: This is the host's kernel message buffer. cAdvisor uses this device specifically for Out-of-Memory (OOM) detection.
+      # By monitoring kernel logs, it can alert if a container was killed because it exceeded its memory limit.
+      - /dev/kmsg
+
+  prometheus:
+    image: prom/prometheus:main
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:main
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
