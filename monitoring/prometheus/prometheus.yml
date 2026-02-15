@@ -1,4 +1,5 @@
 global:
+  # pretty aggressive, but it's needed since we are running loadtests
   scrape_interval: 2s
 
 scrape_configs:
@@ -6,3 +7,6 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['guardian-app:8080']
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: [ 'cadvisor:8080']

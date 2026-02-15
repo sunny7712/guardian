@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   guardian-app:
     build:
       context: .
-      dockerfile: guardian-test-server/Dockerfile
+      dockerfile: Dockerfile
     image: guardian-test-server:latest
     ports:
       - "8080:8080"
@@ -12,7 +10,7 @@ services:
       # Setting the host to redis instead of localhost is standard when your Spring application and Redis are running as separate services in a containerized network.
       # Must match the name of the service below
       - SPRING_DATA_REDIS_HOST=redis
-      - JAVA_TOOL_OPTIONS="-Xms256m -Xmx256m"
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx256m
     deploy:
       resources:
         limits:
@@ -33,7 +31,7 @@ services:
           memory: 256M
 
   cadvisor:
-    image: ghcr.io/google/cadvisor:v0.56.2
+    image: ghcr.io/google/cadvisor
     container_name: cadvisor
     privileged: true
     ports:
