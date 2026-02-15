@@ -1,8 +1,8 @@
 plugins {
     id("java")
     id("application")
-    id("org.springframework.boot") version "4.0.1"
-    id("io.spring.dependency-management") version "1.1.7"
+    id("org.springframework.boot") version "3.4.2" apply false
+    id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
 group = "com.sunny.guardian"
@@ -14,14 +14,6 @@ allprojects {
     }
 }
 
-// Disable bootJar and jar for the root project since it has no source
-tasks.named("bootJar") {
-    enabled = false
-}
-
-tasks.named("jar") {
-    enabled = false
-}
 
 subprojects {
     pluginManager.withPlugin("java") {

@@ -1,7 +1,7 @@
 plugins {
     id("java-library")
-    id("org.springframework.boot") version "4.0.1"
-    id("io.spring.dependency-management") version "1.1.7"
+    id("org.springframework.boot")
+    id("io.spring.dependency-management")
 }
 
 group = "com.sunny.guardian"
@@ -15,6 +15,7 @@ dependencies {
     // Core Dependencies
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.boot:spring-boot-starter-aop")
     implementation("org.jspecify:jspecify")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
     implementation("io.micrometer:micrometer-core")
