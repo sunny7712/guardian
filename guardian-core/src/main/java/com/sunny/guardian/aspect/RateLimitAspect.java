@@ -56,6 +56,10 @@ public class RateLimitAspect {
                     "Guardian Rate Limiter: '" + fieldName + "' is mandatory in @GuardianRateLimit"
             );
         }
+        // If the string does NOT start with '#', treat it as a raw string literal. Nothing to resolve
+        if(!expressionString.startsWith("#")) {
+            return expressionString;
+        }
         try {
             String result = parser.parseExpression(expressionString).getValue(evaluationContext, String.class);
             if (result == null || result.trim().isEmpty()) {
