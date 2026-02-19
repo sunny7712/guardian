@@ -64,6 +64,11 @@ public class TokenBucketRateLimiter implements RateLimiter {
             // Check the configured strategy
             String mode = tokenBucketRateLimiterConfig.getFailureMode();
 
+            meterRegistry.counter("guardian.ratelimit.fallback",
+                    "plan", request.plan(),
+                    "mode", mode
+            ).increment();
+
             if ("open".equalsIgnoreCase(mode)) {
                 log.warn("Failure Mode is OPEN. Allowing request despite failure.");
                 return true; // FAIL-OPEN
@@ -71,6 +76,7 @@ public class TokenBucketRateLimiter implements RateLimiter {
                 log.warn("Failure Mode is CLOSED. Blocking request due to failure.");
                 return false; // FAIL-CLOSED
             }
+
         } finally {
             sample.stop(Timer.builder("guardian.ratelimit.logic")
                     .description("Time taken to execute rate limit logic")
