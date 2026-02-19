@@ -1,5 +1,6 @@
 package com.sunny.guardian.controller;
 
+import com.sunny.guardian.annotation.GuardianRateLimit;
 import com.sunny.guardian.dto.RateLimitRequest;
 import com.sunny.guardian.ratelimiter.RateLimiter;
 import org.springframework.http.HttpStatus;
@@ -33,5 +34,14 @@ public class RateLimitTestController {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body("BLOCKED");
         }
     }
+
+    @GetMapping("/limit-annotation")
+    @GuardianRateLimit(key = "#user", plan = "load_test_plan", quota = "default")
+    public ResponseEntity<String> checkLimitAnnotation(
+            @RequestParam(defaultValue = "test_user") String user
+    ) {
+        return ResponseEntity.ok("ALLOWED");
+    }
+
 
 }

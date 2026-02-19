@@ -7,9 +7,11 @@ import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class TokenBucketRateLimiter implements RateLimiter {
 
     public static final String ALLOWED = "allowed";
@@ -57,7 +59,18 @@ public class TokenBucketRateLimiter implements RateLimiter {
             return allowed;
         } catch (Exception e) {
             decision = ERROR;
-            throw e;
+            log.error("Rate Limiter Storage failed for key: {}. Error: {}", request.key(), e.getMessage());
+
+            // Check the configured strategy
+            String mode = tokenBucketRateLimiterConfig.getFailureMode();
+
+            if ("open".equalsIgnoreCase(mode)) {
+                log.warn("Failure Mode is OPEN. Allowing request despite failure.");
+                return true; // FAIL-OPEN
+            } else {
+                log.warn("Failure Mode is CLOSED. Blocking request due to failure.");
+                return false; // FAIL-CLOSED
+            }
         } finally {
             sample.stop(Timer.builder("guardian.ratelimit.logic")
                     .description("Time taken to execute rate limit logic")

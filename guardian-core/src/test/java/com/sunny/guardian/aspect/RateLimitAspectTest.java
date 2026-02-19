@@ -20,7 +20,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-public class RateLimitAspectTest {
+class RateLimitAspectTest {
 
     @Autowired
     private TestService testService;

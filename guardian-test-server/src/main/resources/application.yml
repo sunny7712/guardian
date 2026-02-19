@@ -26,3 +26,6 @@ guardian:
         default:
           bucketCapacity: 100
           refillRate: 50
+
+    failure-mode:
+      closed
