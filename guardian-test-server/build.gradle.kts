@@ -16,7 +16,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.springframework.boot:spring-boot-starter-actuator") // Metrics
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("com.redis.testcontainers:testcontainers-redis-junit:1.6.4")
 }
 
 tasks.test {
