@@ -5,6 +5,10 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
+ext {
+    set("testcontainers.version", "1.21.4")
+}
+
 group = "com.sunny.guardian"
 version = "1.0.0-SNAPSHOT"
 

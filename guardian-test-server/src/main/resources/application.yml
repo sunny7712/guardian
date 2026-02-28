@@ -26,6 +26,12 @@ guardian:
         default:
           bucketCapacity: 100
           refillRate: 50
+    failure-mode: closed
 
-    failure-mode:
-      closed
+  sliding-window:
+    failure-mode: closed
+    plans:
+      strict_plan:
+        default:
+          requestLimit: 5          # Only 5 requests
+          windowSizeInSeconds: 60  # Per 1 minute

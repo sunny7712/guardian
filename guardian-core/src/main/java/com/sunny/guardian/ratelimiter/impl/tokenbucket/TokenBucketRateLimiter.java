@@ -66,7 +66,7 @@ public class TokenBucketRateLimiter implements RateLimiter {
 
             meterRegistry.counter("guardian.ratelimit.fallback",
                     "plan", request.plan(),
-                    "mode", mode
+                    "mode", mode.toUpperCase()
             ).increment();
 
             if ("open".equalsIgnoreCase(mode)) {
@@ -79,6 +79,7 @@ public class TokenBucketRateLimiter implements RateLimiter {
 
         } finally {
             sample.stop(Timer.builder("guardian.ratelimit.logic")
+                    .tag("algorithm", "token_bucket")
                     .description("Time taken to execute rate limit logic")
                     .tag("plan", request.plan())
                     .tag("quota", request.quota())

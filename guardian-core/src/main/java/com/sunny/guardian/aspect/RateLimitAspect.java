@@ -14,16 +14,17 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.stream.IntStream;
 
 @Aspect
 @Component
 public class RateLimitAspect {
-    private final RateLimiter rateLimiter;
+    private final Map<String, RateLimiter> rateLimiters;
     private final ExpressionParser parser = new SpelExpressionParser();
 
-    public RateLimitAspect(RateLimiter rateLimiter) {
-        this.rateLimiter = rateLimiter;
+    public RateLimitAspect(Map<String, RateLimiter> rateLimiters) {
+        this.rateLimiters = rateLimiters;
     }
 
     @Around("@annotation(guardianRateLimit)")
@@ -36,8 +37,15 @@ public class RateLimitAspect {
 
         RateLimitRequest request = new RateLimitRequest(key, plan, quota);
 
+        String algorithm = guardianRateLimit.algorithm();
+        RateLimiter selectedRateLimiter = rateLimiters.get(algorithm);
+
+        if(selectedRateLimiter == null) {
+            throw new IllegalStateException("Guardian Rate Limiter: No algorithm bean found with name '\" + targetAlgorithm + \"'");
+        }
+
         // 4. Ask the RateLimiter
-        boolean allowed = rateLimiter.allow(request);
+        boolean allowed = selectedRateLimiter.allow(request);
 
         if (!allowed) {
             throw new RateLimitExceededException("Rate limit exceeded for key: " + key);

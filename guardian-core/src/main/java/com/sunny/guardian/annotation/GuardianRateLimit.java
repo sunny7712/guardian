@@ -8,6 +8,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface GuardianRateLimit {
+
+    String algorithm() default "tokenBucketRateLimiter";
     /**
      * The unique key for the rate limit (e.g., user ID, IP address).
      * Supports Spring Expression Language (SpEL).
