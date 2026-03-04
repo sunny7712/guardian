@@ -6,6 +6,7 @@ import com.sunny.guardian.ratelimiter.impl.tokenbucket.config.TokenBucketRateLim
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.impl.RedisLuaTokenBucketStore;
+import com.sunny.guardian.ratelimiter.impl.tokenbucket.sync.TokenBucketConfigProvider;
 import com.sunny.guardian.utils.GuardianClock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -21,6 +22,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -34,6 +36,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @SpringBootTest
 @Testcontainers
+@TestPropertySource(properties = {
+        "guardian.token-bucket.enabled=true",
+        "guardian.token-bucket.plans.test_plan.default.bucketCapacity=10",
+        "guardian.token-bucket.plans.test_plan.default.refillRate=1"
+})
 class RedisLuaTokenBucketStoreTest {
 
     @Container
@@ -59,10 +66,10 @@ class RedisLuaTokenBucketStoreTest {
         @Primary
         public TokenBucketRateLimiter testRateLimiter(
                 @Qualifier("testRedisLuaTokenBucketStore") TokenBucketStore store, // Inject test store bean
-                TokenBucketRateLimiterConfig config,
+                TokenBucketConfigProvider configProvider,
                 MeterRegistry registry) {
 
-            return new TokenBucketRateLimiter(store, config, registry);
+            return new TokenBucketRateLimiter(store, configProvider, registry);
         }
 
         @Bean
@@ -85,12 +92,6 @@ class RedisLuaTokenBucketStoreTest {
     void setup() {
         assert redisTemplate.getConnectionFactory() != null;
         redisTemplate.getConnectionFactory().getConnection().serverCommands().flushAll();
-
-        Map<String, Map<String, TokenBucketQuota>> plans = new HashMap<>();
-        Map<String, TokenBucketQuota> quotaMap = new HashMap<>();
-        quotaMap.put("default", new TokenBucketQuota(10, 1));
-        plans.put("test_plan", quotaMap);
-        tokenBucketRateLimiterConfig.setPlans(plans);
     }
 
     @Test

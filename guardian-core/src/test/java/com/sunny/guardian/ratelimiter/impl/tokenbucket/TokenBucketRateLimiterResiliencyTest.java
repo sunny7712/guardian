@@ -4,6 +4,7 @@ import com.sunny.guardian.dto.RateLimitRequest;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.config.TokenBucketRateLimiterConfig;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
+import com.sunny.guardian.ratelimiter.impl.tokenbucket.sync.TokenBucketConfigProvider;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +25,8 @@ class TokenBucketRateLimiterResiliencyTest {
     void setUp() {
         mockStore = Mockito.mock(TokenBucketStore.class);
         config = new TokenBucketRateLimiterConfig();
+        TokenBucketConfigProvider mockProvider = Mockito.mock(TokenBucketConfigProvider.class);
+        Mockito.when(mockProvider.getConfig()).thenReturn(config);
 
         Map<String, Map<String, TokenBucketQuota>> plans = new HashMap<>();
         Map<String, TokenBucketQuota> quotaMap = new HashMap<>();
@@ -31,7 +34,7 @@ class TokenBucketRateLimiterResiliencyTest {
         plans.put("test_plan", quotaMap);
         config.setPlans(plans);
 
-        rateLimiter = new TokenBucketRateLimiter(mockStore, config, new SimpleMeterRegistry());
+        rateLimiter = new TokenBucketRateLimiter(mockStore, mockProvider, new SimpleMeterRegistry());
         request = new RateLimitRequest("user_123", "test_plan", "default");
     }
 

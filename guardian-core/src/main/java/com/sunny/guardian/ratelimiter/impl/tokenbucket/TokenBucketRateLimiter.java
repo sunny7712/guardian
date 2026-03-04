@@ -5,13 +5,16 @@ import com.sunny.guardian.ratelimiter.RateLimiter;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.config.TokenBucketRateLimiterConfig;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
+import com.sunny.guardian.ratelimiter.impl.tokenbucket.sync.TokenBucketConfigProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
+@ConditionalOnProperty(prefix = "guardian.token-bucket", name = "enabled")
 public class TokenBucketRateLimiter implements RateLimiter {
 
     public static final String ALLOWED = "allowed";
@@ -23,16 +26,16 @@ public class TokenBucketRateLimiter implements RateLimiter {
 
 
     private final TokenBucketStore store;
-    private final TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig;
+    private final TokenBucketConfigProvider configProvider;
     private final MeterRegistry meterRegistry;
 
 
 
     public TokenBucketRateLimiter(TokenBucketStore tokenBucketStore,
-                                  TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig,
+                                  TokenBucketConfigProvider configProvider,
                                   MeterRegistry meterRegistry) {
         this.store = tokenBucketStore;
-        this.tokenBucketRateLimiterConfig = tokenBucketRateLimiterConfig;
+        this.configProvider = configProvider;
         this.meterRegistry = meterRegistry;
     }
 
@@ -44,7 +47,8 @@ public class TokenBucketRateLimiter implements RateLimiter {
         String decision = ALLOWED;
 
         try {
-            var planMap = tokenBucketRateLimiterConfig.getPlans().get(request.plan());
+            TokenBucketRateLimiterConfig currentConfig = configProvider.getConfig();
+            var planMap = currentConfig.getPlans().get(request.plan());
             if (planMap == null) {
                 throw new IllegalArgumentException("Invalid plan: " + request.plan());
             }
@@ -62,7 +66,7 @@ public class TokenBucketRateLimiter implements RateLimiter {
             log.error("Rate Limiter Storage failed for key: {}. Error: {}", request.key(), e.getMessage());
 
             // Check the configured strategy
-            String mode = tokenBucketRateLimiterConfig.getFailureMode();
+            String mode = configProvider.getConfig().getFailureMode();
 
             meterRegistry.counter("guardian.ratelimit.fallback",
                     "plan", request.plan(),

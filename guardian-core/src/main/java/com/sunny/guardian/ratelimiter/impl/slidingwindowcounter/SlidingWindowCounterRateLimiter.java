@@ -4,17 +4,20 @@ import com.sunny.guardian.dto.RateLimitRequest;
 import com.sunny.guardian.ratelimiter.RateLimiter;
 import com.sunny.guardian.ratelimiter.impl.slidingwindowcounter.config.SlidingWindowRateLimiterConfig;
 import com.sunny.guardian.ratelimiter.impl.slidingwindowcounter.dto.SlidingWindowQuota;
+import com.sunny.guardian.ratelimiter.impl.slidingwindowcounter.storage.SlidingWindowStore;
 import com.sunny.guardian.ratelimiter.impl.slidingwindowcounter.storage.impl.RedisLuaSlidingWindowStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component("slidingWindowCounterRateLimiter")
 @Slf4j
+@ConditionalOnProperty(prefix = "guardian.sliding-window-counter", name = "enabled")
 public class SlidingWindowCounterRateLimiter implements RateLimiter {
 
-    private final RedisLuaSlidingWindowStore store;
+    private final SlidingWindowStore store;
     private final SlidingWindowRateLimiterConfig config;
     private final MeterRegistry meterRegistry;
 

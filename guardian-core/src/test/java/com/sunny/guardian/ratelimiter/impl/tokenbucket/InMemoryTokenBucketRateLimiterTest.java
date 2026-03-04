@@ -5,10 +5,12 @@ import com.sunny.guardian.ratelimiter.impl.tokenbucket.config.TokenBucketRateLim
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.dto.TokenBucketQuota;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.TokenBucketStore;
 import com.sunny.guardian.ratelimiter.impl.tokenbucket.storage.impl.InMemoryTokenBucketStore;
+import com.sunny.guardian.ratelimiter.impl.tokenbucket.sync.TokenBucketConfigProvider;
 import com.sunny.guardian.utils.GuardianClock;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +29,8 @@ class InMemoryTokenBucketRateLimiterTest {
         TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig = new TokenBucketRateLimiterConfig();
         Map<String, Map<String, TokenBucketQuota>> plans = new HashMap<>();
         Map<String, TokenBucketQuota> quotaMap = new HashMap<>();
+        TokenBucketConfigProvider mockProvider = Mockito.mock(TokenBucketConfigProvider.class);
+        Mockito.when(mockProvider.getConfig()).thenReturn(tokenBucketRateLimiterConfig);
 
         // Capacity: 10, Refill: 10 Tokens / sec
         quotaMap.put("default", new TokenBucketQuota(10, 1));
@@ -43,7 +47,7 @@ class InMemoryTokenBucketRateLimiterTest {
         // Inject Store into the Limiter
         TokenBucketRateLimiter tokenBucketRateLimiter = new TokenBucketRateLimiter(
                 store,
-                tokenBucketRateLimiterConfig,
+                mockProvider,
                 simpleMeterRegistry
         );
 
@@ -90,6 +94,8 @@ class InMemoryTokenBucketRateLimiterTest {
         TokenBucketRateLimiterConfig tokenBucketRateLimiterConfig = new TokenBucketRateLimiterConfig();
         Map<String, Map<String, TokenBucketQuota>> plans = new HashMap<>();
         Map<String, TokenBucketQuota> quotaMap = new HashMap<>();
+        TokenBucketConfigProvider mockProvider = Mockito.mock(TokenBucketConfigProvider.class);
+        Mockito.when(mockProvider.getConfig()).thenReturn(tokenBucketRateLimiterConfig);
 
         // Capacity: 10, Refill: 1 token/sec
         quotaMap.put("default", new TokenBucketQuota(10, 1));
@@ -107,7 +113,7 @@ class InMemoryTokenBucketRateLimiterTest {
 
         TokenBucketRateLimiter tokenBucket = new TokenBucketRateLimiter(
                 store,
-                tokenBucketRateLimiterConfig,
+                mockProvider,
                 simpleMeterRegistry
         );
 

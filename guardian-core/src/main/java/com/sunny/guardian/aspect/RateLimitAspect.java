@@ -8,6 +8,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -19,6 +20,7 @@ import java.util.stream.IntStream;
 
 @Aspect
 @Component
+@ConditionalOnBean(RateLimiter.class)
 public class RateLimitAspect {
     private final Map<String, RateLimiter> rateLimiters;
     private final ExpressionParser parser = new SpelExpressionParser();

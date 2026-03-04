@@ -1,9 +1,13 @@
 package com.sunny.guardian.ratelimiter.impl.tokenbucket.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class TokenBucketQuota {
-    private final long bucketCapacity;
-    private final long refillRate;
+    private long bucketCapacity;
+    private long refillRate;
 }

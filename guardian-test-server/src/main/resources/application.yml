@@ -20,15 +20,19 @@ management:
       application: guardian-server
 
 guardian:
+  dynamic-config:
+    refresh-rate: 60000
   token-bucket:
+    enabled: true
+    failure-mode: closed
     plans:
       load_test_plan:
         default:
           bucketCapacity: 100
           refillRate: 50
-    failure-mode: closed
 
-  sliding-window:
+  sliding-window-counter:
+    enabled: true
     failure-mode: closed
     plans:
       strict_plan:

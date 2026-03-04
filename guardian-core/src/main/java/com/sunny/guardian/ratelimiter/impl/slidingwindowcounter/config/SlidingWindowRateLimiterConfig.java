@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "guardian.sliding-window")
+@ConfigurationProperties(prefix = "guardian.sliding-window-counter")
 public class SlidingWindowRateLimiterConfig extends BaseRateLimiterConfig<SlidingWindowQuota> {
     private String failureMode = "closed";
 }
