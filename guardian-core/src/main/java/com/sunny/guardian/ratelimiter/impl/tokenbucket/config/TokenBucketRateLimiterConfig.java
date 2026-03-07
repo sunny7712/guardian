@@ -13,6 +13,6 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "guardian.token-bucket")
 public class TokenBucketRateLimiterConfig extends BaseRateLimiterConfig<TokenBucketQuota> {
 
-    private String failureMode;
+    private String failureMode = "closed";
 
 }

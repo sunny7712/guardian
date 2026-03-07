@@ -43,7 +43,7 @@ public class RateLimitAspect {
         RateLimiter selectedRateLimiter = rateLimiters.get(algorithm);
 
         if(selectedRateLimiter == null) {
-            throw new IllegalStateException("Guardian Rate Limiter: No algorithm bean found with name '\" + targetAlgorithm + \"'");
+            throw new IllegalStateException("Guardian Rate Limiter: No algorithm bean found with name '" + algorithm + "'");
         }
 
         // 4. Ask the RateLimiter

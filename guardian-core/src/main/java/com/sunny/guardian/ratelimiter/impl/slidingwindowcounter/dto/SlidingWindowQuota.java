@@ -1,9 +1,13 @@
 package com.sunny.guardian.ratelimiter.impl.slidingwindowcounter.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class SlidingWindowQuota {
-    private final long requestLimit;
-    private final long windowSizeInSeconds;
+    private long requestLimit;
+    private long windowSizeInSeconds;
 }
