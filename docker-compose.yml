@@ -10,12 +10,12 @@ services:
       # Setting the host to redis instead of localhost is standard when your Spring application and Redis are running as separate services in a containerized network.
       # Must match the name of the service below
       - SPRING_DATA_REDIS_HOST=redis
-      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx256m
+      - JAVA_TOOL_OPTIONS=-Xms512m -Xmx2g
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 512M
+          cpus: '4.0'
+          memory: 3GB
     depends_on:
       - redis
 
@@ -80,3 +80,17 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - prometheus
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.81.0
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+    depends_on:
+      - redis

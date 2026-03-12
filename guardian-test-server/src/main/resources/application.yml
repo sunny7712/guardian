@@ -1,5 +1,8 @@
 server:
   port: 8080
+  tomcat:
+    mbeanregistry:
+      enabled: true
 
 spring:
   data:
@@ -15,7 +18,8 @@ management:
   metrics:
     distribution:
       percentiles-histogram:
-        http.server.requests: true # Gives us P95/P99 latency buckets
+        http.server.requests: true
+        guardian.ratelimit.logic: true
     tags:
       application: guardian-server
 

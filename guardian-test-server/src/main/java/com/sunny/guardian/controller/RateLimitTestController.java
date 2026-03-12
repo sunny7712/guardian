@@ -20,6 +20,11 @@ public class RateLimitTestController {
         this.rateLimiter = rateLimiter;
     }
 
+    @GetMapping("/ping")
+    public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("PONG");
+    }
+
     @GetMapping("/limit-token-bucket-manual")
     public ResponseEntity<String> checkLimit(
             @RequestParam(defaultValue = "test_user") String user,
