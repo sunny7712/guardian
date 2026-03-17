@@ -2,7 +2,6 @@
 
 Distributed rate-limiting library for Spring Boot. Redis-backed Lua scripts for atomic evaluation, AOP annotations for non-intrusive enforcement, dynamic configuration sync at runtime.
 
-![Grafana Dashboard](assets/img.png)
 
 ## Table of Contents
 
