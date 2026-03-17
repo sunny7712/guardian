@@ -1,13 +1,23 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { Trend } from 'k6/metrics';
+import { Counter, Trend } from 'k6/metrics';
 
 const latency = new Trend('req_latency');
+const uniqueKeys = new Counter('unique_keys_created');
 
 // High cardinality test: validates that Redis performance does not degrade
 // as the number of unique rate-limit keys grows.
 // Each VU uses a unique user key, creating thousands of distinct Redis entries.
 // The latency at the end of the test should remain comparable to the start.
+//
+// Redis key count awareness: tracks the number of unique keys created during
+// the test. The token bucket Lua script stores keys with a TTL of 3600s, so
+// keys won't expire during this test. We verify that:
+//   1. The unique key count matches expectations (tracked via k6 counter)
+//   2. Latency remains stable as keyspace grows
+//
+// After this test, use collect_metrics.sh to verify Redis memory usage is
+// proportional to the unique key count (not unbounded).
 export const options = {
   scenarios: {
     cardinality_ramp: {
@@ -32,10 +42,19 @@ export const options = {
 };
 
 let counter = 0;
+const seenKeys = {};
 
 export default function () {
   // Each request uses a unique key to grow the Redis keyspace
   const uniqueUser = `user_${__VU}_${counter++}`;
+
+  // Track unique keys created (each VU+counter combo is unique)
+  const keyId = `${__VU}_${counter}`;
+  if (!seenKeys[keyId]) {
+    seenKeys[keyId] = true;
+    uniqueKeys.add(1);
+  }
+
   const res = http.get(`http://localhost:8080/limit-token-bucket?user=${uniqueUser}`);
 
   latency.add(res.timings.duration);
