@@ -1,81 +1,50 @@
 # Guardian: Distributed Rate Limiting Library
 
-Guardian is an educational project built to learn how to implement highly concurrent, resilient, and dynamically configurable distributed rate-limiting library for Spring Boot applications. Designed as a drop-in core library (`guardian-core`) with an accompanying test server, it provides robust API protection using Redis-backed atomicity, Aspect-Oriented Programming (AOP), and real-time configuration sync.
-
----
+Guardian is an educational project built to learn how to implement a highly concurrent, resilient, and dynamically configurable distributed rate-limiting library for Spring Boot applications. Designed as a drop-in core library (`guardian-core`) with an accompanying test server, it provides robust API protection using Redis-backed atomicity, Aspect-Oriented Programming (AOP), and real-time configuration sync.
 
 ## Table of Contents
 
-- [Architecture & Key Design Choices](#️-architecture--key-design-choices)
-    - [Concurrency & Atomicity (The "Thundering Herd" Problem)](#1-concurrency--atomicity-the-thundering-herd-problem)
-    - [Annotation-Driven AOP & SpEL Context](#2-annotation-driven-aop--spel-context)
-    - [Real-Time Dynamic Configuration](#3-real-time-dynamic-configuration)
-    - [Resiliency & Failure Modes](#4-resiliency--failure-modes)
-    - [Deep Observability](#5-deep-observability)
-- [Algorithms Implemented](#️-algorithms-implemented)
-    - [Token Bucket](#1-token-bucket)
-    - [Sliding Window Counter](#2-sliding-window-counter)
-- [Getting Started](#-getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Running the Full Stack](#running-the-full-stack)
-- [Usage Guide](#-usage-guide)
-    - [Protecting an Endpoint](#1-protecting-an-endpoint)
-    - [Baseline Configuration (YAML)](#2-baseline-configuration-yaml)
-    - [Exception Handling](#3-exception-handling)
-- [Testing & Validation](#-testing--validation)
-    - [Unit & Integration Tests](#unit--integration-tests)
-    - [Load Testing (k6)](#load-testing-k6)
-- [Project Structure](#-project-structure)
-- [Pluggable Architecture & Extensibility (Open-Closed Principle)](#6-pluggable-architecture--extensibility-open-closed-principle)
-    - [Bring Your Own Algorithm (BYOA)](#bring-your-own-algorithm-byoa)
-    - [Bring Your Own Storage (BYOS)](#bring-your-own-storage-byos)
-    - [Dynamic Routing](#dynamic-routing)
-  
----
+- [Architecture & Key Design Choices](#architecture--key-design-choices)
+- [Algorithms Implemented](#algorithms-implemented)
+- [Getting Started](#getting-started)
+- [Usage Guide](#usage-guide)
+- [Testing & Validation](#testing--validation)
+- [Project Structure](#project-structure)
+- [Pluggable Architecture & Extensibility](#pluggable-architecture--extensibility)
 
-# Architecture & Key Design Choices
+## Architecture & Key Design Choices
 
 Guardian is built with a focus on high throughput, zero race conditions, and graceful degradation.
 
-## 1. Concurrency & Atomicity (The "Thundering Herd" Problem)
+### Concurrency & Atomicity (The "Thundering Herd" Problem)
 
-### Redis Lua Scripts (Primary)
+#### Redis Lua Scripts (Primary)
 
 Rate-limiting logic (Token Bucket and Sliding Window) is pushed directly to Redis via embedded Lua scripts. This ensures **100% atomicity** during high-concurrency bursts without the overhead of distributed locks or optimistic locking loops.
 
-### Data Structures
+#### Data Structures
 
 The Token Bucket uses a Redis **HASH** to store available tokens and the last refill timestamp efficiently.
 
-### Fallback Storage Mechanisms
+#### Fallback Storage Mechanisms
 
 The project includes an educational implementation of:
 
 - Redis `WATCH/MULTI/EXEC` transactional store
 - `ConcurrentHashMap` based in-memory store for non-distributed testing
 
----
-
-## 2. Annotation-Driven AOP & SpEL Context
+### Annotation-Driven AOP & SpEL Context
 
 Rate limits are enforced non-intrusively via the `@GuardianRateLimit` annotation.
 
-### Spring Expression Language (SpEL)
-
-The annotation supports SpEL, allowing dynamic resolution of rate-limit keys directly from:
-
-- method parameters
-
-Examples:
+The annotation supports SpEL, allowing dynamic resolution of rate-limit keys directly from method parameters:
 
 ```
 #user.id
 #request.getRemoteAddr()
 ```
 
----
-
-## 3. Real-Time Dynamic Configuration
+### Real-Time Dynamic Configuration
 
 Rate limits often need to be adjusted during live incidents (for example a sudden traffic spike).
 
@@ -83,34 +52,22 @@ Guardian uses a **GuardianConfigScheduler** that polls Redis (`guardian:config:*
 
 Behavior:
 
-1. If a valid JSON configuration is found  
+1. If a valid JSON configuration is found
    → it atomically swaps the configuration reference in memory without requiring an application restart.
 
-2. If the Redis configuration is malformed or missing  
+2. If the Redis configuration is malformed or missing
    → it safely falls back to the baseline YAML configuration.
 
----
-
-## 4. Resiliency & Failure Modes
-
-### Fail-Open vs Fail-Closed
+### Resiliency & Failure Modes
 
 If the Redis cluster becomes unavailable or a timeout occurs, Guardian intercepts the exception and evaluates the configured failure mode.
 
-**OPEN**
+| Mode | Behavior | Priority |
+|---|---|---|
+| **OPEN** | Swallows the exception, allows the request to pass | Availability |
+| **CLOSED** | Blocks the request | Strict quota enforcement |
 
-- Swallows the exception
-- Allows the request to pass
-- Prioritizes availability
-
-**CLOSED**
-
-- Blocks the request
-- Prioritizes strict quota enforcement
-
----
-
-## 5. Observability
+### Observability
 
 Integrated with **Micrometer**, Guardian emits metrics for every rate-limit evaluation.
 
@@ -126,12 +83,12 @@ The project includes a fully configured `docker-compose.yml` stack containing:
 - **Prometheus** for scraping metrics
 - **Grafana** for visualization
 - **cAdvisor** for container-level resource monitoring
-![img.png](assets/img.png)
----
 
-# Algorithms Implemented
+![Grafana Dashboard](assets/img.png)
 
-## 1. Token Bucket
+## Algorithms Implemented
+
+### Token Bucket
 
 A highly optimized algorithm suitable for general API rate limiting and allowing controlled bursts.
 
@@ -140,20 +97,16 @@ A highly optimized algorithm suitable for general API rate limiting and allowing
 - `bucketCapacity` (maximum burst)
 - `refillRate` (tokens added per second)
 
-**Storage**
-
-Redis Hash
+**Storage** — Redis Hash
 
 ```
-{ 
+{
   t: current_tokens,
-  r: last_refill_timestamp 
+  r: last_refill_timestamp
 }
 ```
 
----
-
-## 2. Sliding Window Counter
+### Sliding Window Counter
 
 Provides smoother traffic distribution than fixed window algorithms by calculating a weighted estimate of traffic based on previous and current window limits.
 
@@ -162,23 +115,17 @@ Provides smoother traffic distribution than fixed window algorithms by calculati
 - `requestLimit` (maximum requests)
 - `windowSizeInSeconds` (rolling time frame)
 
-**Storage**
+**Storage** — Redis keys for current and previous window boundaries with TTLs.
 
-Redis keys for current and previous window boundaries with TTLs.
+## Getting Started
 
----
-
-# Getting Started
-
-## Prerequisites
+### Prerequisites
 
 - Java 21
 - Docker
 - Docker Compose
 
----
-
-## Running the Full Stack
+### Running the Full Stack
 
 The project includes a **guardian-test-server** that implements the library.
 
@@ -190,18 +137,16 @@ docker-compose up --build -d
 
 Services:
 
-- App: http://localhost:8080
-- Prometheus: http://localhost:9090
-- Grafana: http://localhost:3000
-    - User: `admin`
-    - Pass: `admin`
-- cAdvisor: http://localhost:8081
+| Service | URL | Notes |
+|---|---|---|
+| App | http://localhost:8080 | |
+| Prometheus | http://localhost:9090 | |
+| Grafana | http://localhost:3000 | User: `admin` / Pass: `admin` |
+| cAdvisor | http://localhost:8081 | |
 
----
+## Usage Guide
 
-# Usage Guide
-
-## 1. Protecting an Endpoint
+### Protecting an Endpoint
 
 Apply the `@GuardianRateLimit` annotation to any Spring-managed bean method.
 
@@ -229,9 +174,7 @@ public class PaymentController {
 }
 ```
 
----
-
-## 2. Baseline Configuration (YAML)
+### Baseline Configuration (YAML)
 
 Define rate-limit plans in `application.yml`.
 
@@ -255,25 +198,19 @@ guardian:
           windowSizeInSeconds: 60
 ```
 
----
-
-## 3. Exception Handling
+### Exception Handling
 
 When a limit is breached, a `RateLimitExceededException` is thrown.
 
 The test server translates this exception into an HTTP response using `@ControllerAdvice`.
 
-Resulting response:
-
 ```
 HTTP 429 Too Many Requests
 ```
 
----
+## Testing & Validation
 
-# Testing & Validation
-
-## Unit & Integration Tests
+### Unit & Integration Tests
 
 The `guardian-core` module is tested using **Testcontainers**, which spins up ephemeral Redis instances.
 
@@ -283,149 +220,73 @@ This ensures Lua scripts and concurrent logic are tested against real infrastruc
 ./gradlew clean test
 ```
 
----
+### Load Testing (k6)
 
-## Load Testing (k6)
+A k6 test suite is included in the `tests/` directory to validate correctness and performance under load. See [`tests/LOAD_TEST_FINDINGS.md`](tests/LOAD_TEST_FINDINGS.md) for detailed benchmark results and threshold calibration.
 
-A **k6 test matrix** is included to validate atomicity and performance under heavy load.
-
-```
-tests/
-```
-
-Run tests:
+| Test | Purpose |
+|---|---|
+| `baseline.js` | Throughput and latency regression guard (step-load up to 20k RPS) |
+| `thundering_herd.js` | Validates Lua atomicity — exactly N requests allowed under concurrent contention |
+| `noisy_neighbour.js` | Confirms per-key isolation — a malicious user cannot degrade a legitimate user |
+| `high_cardinality.js` | Ensures Redis performance stability as unique key count grows |
 
 ```bash
-# Baseline test
-k6 run tests/load_test_matrix.js
-
-# Hot-key scenario (high contention on a single Redis key)
-k6 run -e SCENARIO=hot_key tests/load_test_matrix.js
+k6 run tests/baseline.js
+k6 run tests/thundering_herd.js
+k6 run tests/noisy_neighbour.js
+k6 run tests/high_cardinality.js
 ```
 
----
-
-# Project Structure
+## Project Structure
 
 ```
-guardian-core/
+guardian-core/              Core rate-limiting library
+├── annotation/             @GuardianRateLimit annotation
+├── aspect/                 AOP interceptor, SpEL evaluation
+├── ratelimiter/            Algorithm implementations (Token Bucket, Sliding Window)
+│   └── impl/
+│       ├── tokenbucket/    Token Bucket limiter, config, store interfaces & impls
+│       └── slidingwindowcounter/  Sliding Window limiter, config, store interfaces & impls
+├── storage/                Storage backends (Redis Lua, Transactional, In-memory)
+├── sync/                   Dynamic configuration scheduler and reloader interface
+└── resources/scripts/      Redis Lua scripts
+
+guardian-test-server/       Sample Spring Boot app demonstrating the library
+monitoring/                 Prometheus configuration
+tests/                      k6 load test scripts and findings
 ```
 
-Core rate-limiting library.
+## Pluggable Architecture & Extensibility
 
-**Key modules**
-
-```
-annotation/
-aspect/
-```
-
-- SpEL evaluation
-- method interception
-
-```
-ratelimiter/
-```
-
-Algorithm implementations
-
-- Token Bucket
-- Sliding Window
-
-```
-storage/
-```
-
-Storage backends
-
-- Redis Lua
-- Transactional
-- In-memory
-
-```
-sync/
-```
-
-Real-time configuration synchronization logic.
-
-```
-src/main/resources/scripts/
-```
-
-Optimized Lua scripts.
-
-```
-guardian-test-server/
-```
-
-Sample Spring Boot application demonstrating the library.
-
-```
-monitoring/
-```
-
-Prometheus configuration.
-
-```
-tests/
-```
-
-k6 load testing scripts.
-
----
-
-# 6. Pluggable Architecture & Extensibility (Open-Closed Principle)
-
-Guardian follows the **Strategy Pattern**.
-
-The framework is:
-
-- **Closed for modification**
-- **Open for extension**
-
-Core behaviors are decoupled through strict interfaces:
+Guardian follows the **Strategy Pattern** and the Open-Closed Principle. Core behaviors are decoupled through strict interfaces:
 
 - `RateLimiter`
 - `TokenBucketStore`
 - `SlidingWindowStore`
 
----
+### Bring Your Own Algorithm (BYOA)
 
-## Bring Your Own Algorithm (BYOA)
-
-Developers can implement custom algorithms (for example **Leaky Bucket**) by implementing:
-
-```
-RateLimiter
-```
-
-and registering it as a Spring bean:
+Implement a custom algorithm (e.g. Leaky Bucket) by implementing the `RateLimiter` interface and registering it as a Spring bean:
 
 ```java
 @Component("myCustomLimiter")
+public class LeakyBucketRateLimiter implements RateLimiter {
+    @Override
+    public boolean allow(RateLimitRequest request) { /* ... */ }
+}
 ```
 
----
+### Bring Your Own Storage (BYOS)
 
-## Bring Your Own Storage (BYOS)
+Replace the persistence layer with Cassandra, PostgreSQL, or any other backend by implementing the appropriate **Store interface** (`TokenBucketStore` or `SlidingWindowStore`).
 
-If Redis is not suitable, developers can replace the persistence layer with:
+### Dynamic Routing
 
-- Cassandra
-- PostgreSQL
-
-by implementing the appropriate **Store interface**.
-
----
-
-## Dynamic Routing
-
-Custom implementations integrate with the existing AOP infrastructure.
-
-Example:
+Custom implementations integrate with the existing AOP infrastructure automatically:
 
 ```java
 @GuardianRateLimit(algorithm = "myCustomLimiter")
 ```
 
-At runtime, Guardian dynamically resolves the bean and routes requests to the custom limiter **without modifying the core library**.
+At runtime, Guardian dynamically resolves the bean and routes requests to the custom limiter without modifying the core library.
