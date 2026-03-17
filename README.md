@@ -4,6 +4,19 @@ Distributed rate-limiting library for Spring Boot. Redis-backed Lua scripts for 
 
 ![Grafana Dashboard](assets/img.png)
 
+## Table of Contents
+
+- [How It Works](#how-it-works)
+- [Algorithms](#algorithms)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Performance](#performance)
+- [Getting Started](#getting-started)
+- [Load Tests](#load-tests)
+- [Extensibility](#extensibility)
+- [Project Structure](#project-structure)
+- [Observability](#observability)
+
 ## How It Works
 
 1. Annotate a controller method with `@GuardianRateLimit`
@@ -97,11 +110,11 @@ Benchmarked on Docker for Mac (4 CPU / 3GB app container, single Redis). Full da
 
 **Token bucket accuracy:** 1,598 allowed over 30s at 200 RPS (expected ~1,550). Within 3% of theoretical.
 
-**Memory stability:** 3-minute soak at 2,000 RPS. Redis grew 225 KB. JVM heap stable. No latency degradation.
+**Memory stability:** 3-minute soak at 5,000 RPS. Redis grew 227 KB. JVM heap stable. p95 latency held at 2ms throughout.
 
-### Soak Test Panels (2,000 RPS, 3 minutes)
+### Soak Test Panels (5,000 RPS, 3 minutes)
 
-Sustained throughput held at 2K req/s with no degradation:
+Sustained throughput held at 5K req/s with no degradation:
 
 ![HTTP RPS](assets/soak_http_rps.png)
 

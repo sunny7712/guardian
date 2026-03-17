@@ -8,9 +8,14 @@ const latency = new Trend('req_latency');
 
 // Soak Test — Memory Leak Detection
 //
-// Runs sustained load (2000 RPS for 3 minutes) with rotating keys to stress
-// both JVM heap and Redis memory. After the test completes, use
-// collect_metrics.sh to verify:
+// Runs sustained load (5,000 RPS for 3 minutes) with rotating keys to stress
+// both JVM heap and Redis memory at the highest load where the rate limiter
+// p95 stays under 1ms. Baseline ceiling is ~12-13K for /ping (no Redis), but
+// the Redis Lua round-trip reduces effective capacity. At 8-10K RPS the rate
+// limiter p95 degrades to 13-22ms due to Redis single-thread contention.
+// 5K RPS is the quality boundary for a single Redis instance.
+//
+// After the test completes, use collect_metrics.sh to verify:
 //   - JVM heap usage stabilizes (no unbounded growth)
 //   - Redis memory stabilizes (keys expire via TTL)
 //   - Redis key count stabilizes
@@ -22,11 +27,11 @@ export const options = {
   scenarios: {
     sustained_load: {
       executor: 'constant-arrival-rate',
-      rate: 2000,
+      rate: 5000,
       timeUnit: '1s',
       duration: '3m',
-      preAllocatedVUs: 200,
-      maxVUs: 500,
+      preAllocatedVUs: 300,
+      maxVUs: 600,
     },
   },
   thresholds: {
