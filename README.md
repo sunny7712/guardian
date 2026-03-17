@@ -6,6 +6,7 @@ Guardian is an educational project built to learn how to implement a highly conc
 
 - [Architecture & Key Design Choices](#architecture--key-design-choices)
 - [Algorithms Implemented](#algorithms-implemented)
+- [Performance](#performance)
 - [Getting Started](#getting-started)
 - [Usage Guide](#usage-guide)
 - [Testing & Validation](#testing--validation)
@@ -117,6 +118,44 @@ Provides smoother traffic distribution than fixed window algorithms by calculati
 
 **Storage** — Redis keys for current and previous window boundaries with TTLs.
 
+## Performance
+
+Benchmarked on Docker Compose stack (Spring Boot 3.4.2, JDK 21, Redis 8.6.0-alpine). Environment: Docker for Mac, 4 CPU / 3GB memory limit on the app container. Full findings in [`tests/LOAD_TEST_FINDINGS.md`](tests/LOAD_TEST_FINDINGS.md).
+
+### Rate Limiter Overhead
+
+Server-side overhead of the full AOP &rarr; SpEL &rarr; Redis Lua round-trip, measured via the `guardian_ratelimit_logic_seconds` histogram:
+
+| Percentile | Latency |
+|---|---|
+| p50 | ~520us |
+| p95 | ~980us |
+| p99 | ~5ms |
+
+### Throughput
+
+| Metric | Value |
+|---|---|
+| Sustainable capacity | ~12,000-13,000 RPS (from baseline test) |
+| Server-side p99 | < 1ms (from Prometheus histogram) |
+| Error rate at 10k RPS | 0.00% |
+
+### Atomicity (Thundering Herd)
+
+500 concurrent VUs hit the same rate-limit key simultaneously. Sliding window allows 5 requests per 60s. Result: **exactly 5 allowed, 495 blocked** — zero leaks, proving Lua script atomicity.
+
+### Token Bucket Accuracy
+
+Steady 200 RPS for 30s against a single key (`bucketCapacity=100`, `refillRate=50/s`). Expected ~1,550 allowed requests (100 burst + 50/s * 29s). Threshold: 1,450-1,650.
+
+Measured: **1,598 allowed** — within 3% of theoretical, confirming Lua-based refill accuracy.
+
+### Memory Stability (Soak Test)
+
+2,000 RPS sustained for 3 minutes with 10,000 rotating keys. Verifies JVM heap and Redis memory stabilize with no unbounded growth, GC pauses remain constant, and latency does not degrade.
+
+Measured: Redis memory grew only 225 KB over 3 minutes. JVM heap stable within GC variance. p95 latency held at 2ms throughout.
+
 ## Getting Started
 
 ### Prerequisites
@@ -142,7 +181,8 @@ Services:
 | App | http://localhost:8080 | |
 | Prometheus | http://localhost:9090 | |
 | Grafana | http://localhost:3000 | User: `admin` / Pass: `admin` |
-| cAdvisor | http://localhost:8081 | |
+| cAdvisor | http://localhost:8082 | |
+| Renderer | http://localhost:8081 | Grafana image renderer |
 
 ## Usage Guide
 
@@ -230,12 +270,24 @@ A k6 test suite is included in the `tests/` directory to validate correctness an
 | `thundering_herd.js` | Validates Lua atomicity — exactly N requests allowed under concurrent contention |
 | `noisy_neighbour.js` | Confirms per-key isolation — a malicious user cannot degrade a legitimate user |
 | `high_cardinality.js` | Ensures Redis performance stability as unique key count grows |
+| `token_bucket_accuracy.js` | Proves token bucket allows mathematically correct request count over time |
+| `soak.js` | Detects memory leaks in JVM and Redis under sustained 3-minute load |
+
+Run individual tests or use `collect_metrics.sh` for full metrics collection with Grafana snapshots:
 
 ```bash
+# Individual tests
 k6 run tests/baseline.js
 k6 run tests/thundering_herd.js
 k6 run tests/noisy_neighbour.js
 k6 run tests/high_cardinality.js
+k6 run tests/token_bucket_accuracy.js
+k6 run tests/soak.js
+
+# With Prometheus metrics collection and Grafana panel snapshots
+bash tests/collect_metrics.sh baseline
+bash tests/collect_metrics.sh token_bucket_accuracy
+bash tests/collect_metrics.sh soak
 ```
 
 ## Project Structure
