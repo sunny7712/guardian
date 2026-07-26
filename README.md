@@ -107,7 +107,7 @@ Benchmarked on Docker for Mac (4 CPU / 3GB app container, single Redis). Full da
 
 **Atomicity:** 500 concurrent VUs on one key — exactly 5 allowed, 495 blocked. Zero leaks.
 
-**Token bucket accuracy:** 1,598 allowed over 30s at 200 RPS (expected ~1,550). Within 3% of theoretical.
+**Token bucket accuracy:** 1,598-1,599 allowed over 30s at 200 RPS (expected ~1,550). Within 3% of theoretical, reproduced across runs.
 
 **Memory stability:** 3-minute soak at 5,000 RPS. Redis grew 227 KB. JVM heap stable. p95 latency held at 2ms throughout.
 

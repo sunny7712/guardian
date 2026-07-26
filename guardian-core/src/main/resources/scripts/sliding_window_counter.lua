@@ -25,7 +25,8 @@ if (estimated_count + cost) > limit then
        return 0
 else
     redis.call("INCRBY", current_key, cost)
-    redis.call("EXPIRE", current_key, window_size_ms * 2)
+    -- EXPIRE takes seconds, not ms — use window_size_sec (not window_size_ms) here
+    redis.call("EXPIRE", current_key, window_size_sec * 2)
     return 1
 end
 

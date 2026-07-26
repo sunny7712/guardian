@@ -177,6 +177,26 @@ This metric captures the full AOP → SpEL → Redis Lua round-trip time.
 
 The full rate-limit evaluation (AOP interception → SpEL key resolution → Redis Lua round-trip) completes in **under 1ms at p95**. The p99 tail is dominated by occasional GC pauses and Docker networking variance.
 
+## Regression Verification — TTL Fixes (2026-07-26)
+
+Two bugs were found and fixed in the Redis Lua scripts:
+
+- `token_bucket_hash.lua`: `EXPIRE key 3600` was a flat hardcoded TTL, unrelated to the plan's actual refill rate. Fixed to derive TTL from `bucket_capacity / (refill_rate * 1000)` (seconds to fully refill from empty), floored at 60s.
+- `sliding_window_counter.lua`: `EXPIRE current_key, window_size_ms * 2` passed milliseconds to a seconds-based Redis call — a 60s window got a ~33h TTL instead of ~2min. Fixed to use `window_size_sec * 2`.
+
+Full k6 suite re-run against a fresh Docker build (native Linux Docker, not the Docker-for-Mac rig used above — absolute latencies aren't directly comparable, this run is a correctness/regression check, not a re-benchmark) to confirm no regressions:
+
+| Test | Result | Verdict |
+|---|---|---|
+| `baseline.js` | p95 282µs, p99 1.36ms, 0% errors, 882,289 reqs | PASS |
+| `thundering_herd.js` | exactly 5 allowed, 495 blocked | PASS |
+| `noisy_neighbour.js` | User B 151/150 allowed, p95 0.56ms, no bleed-through from 3,000 RPS attacker | PASS |
+| `high_cardinality.js` | p95 0.62ms, 0% errors, 92,999 unique keys | PASS |
+| `token_bucket_accuracy.js` | 1,599 allowed (expected ~1,550, ±100 margin) — matches prior 1,598 baseline | PASS |
+| `soak.js` (3min, 5,000 RPS) | p95 505µs, p99 1.7ms, 0% errors, 900,001 reqs | PASS |
+
+**TTL fix specifically verified:** post-soak, Redis sat at 879 keys / 1.74MB. 65s later (past the new TTL window) it dropped to **0 keys / 1.60MB** — back to the exact pre-test baseline. Previously, keys sat at a flat 3600s TTL regardless of actual traffic shape; now they expire on schedule instead of accumulating.
+
 ## Collecting Metrics
 
 All tests can be run with full metrics collection and Grafana panel snapshots:

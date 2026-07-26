@@ -33,7 +33,13 @@ end
 -- 5. Update state
 redis.call("HSET", key, F_TOKENS, current_tokens, F_LAST_REFILL, now)
 
--- 6. Expire key after certain duration
-redis.call("EXPIRE", key, 3600)
+-- 6. Expire key once the bucket would be fully refilled and idle
+-- bucket_capacity is in milli-tokens; refill_rate is real tokens/sec (unscaled),
+-- so seconds-to-full-refill = bucket_capacity / (refill_rate * 1000)
+local ttl_seconds = 3600
+if refill_rate > 0 then
+    ttl_seconds = math.max(60, math.ceil(bucket_capacity / (refill_rate * 1000)))
+end
+redis.call("EXPIRE", key, ttl_seconds)
 
 return allowed
